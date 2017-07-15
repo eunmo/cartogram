@@ -1,0 +1,35 @@
+.flex-container {
+	display: -webkit-flex;
+	display: flex;
+}
+
+.flex-1 {
+	-webkit-flex: 1;
+	flex: 1;
+}
+
+.cell {
+	text-align: center;
+	color: white;
+	background-color: beige;
+}
+
+.border-top {
+	border-top-color: black !important;
+}
+
+.border-bottom {
+	border-bottom-color: black !important;
+}
+
+.border-left {
+	border-left-color: black !important;
+}
+
+.border-right {
+	border-right-color: black !important;
+}
+
+h3 {
+	text-align: center;
+}
