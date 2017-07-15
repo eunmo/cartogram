@@ -8,12 +8,12 @@ class App extends Component {
 	constructor(props) {
 	  super(props);
 	
-		var squareCount = this.getSquareCount();;
+		var squareCount = this.getSquareCount();
 		var squares = this.getSquares(squareCount);
 		var step = this.expand(squares);
 		var colors = this.color(squares);
 
-		this.state = {squareCount: squareCount, rows: squares.rows, colors: colors, step: step};
+		this.state = {squareCount: squareCount, matrix: squares.matrix, colors: colors, step: step};
 	}
 
   render() {
@@ -23,7 +23,7 @@ class App extends Component {
 			<div className="flex-container">
 				<div className="flex-1"></div>
 				<div>
-				{this.state.rows.map((row, index) => {
+				{this.state.matrix.map((row, index) => {
 					return (
 						<div key={index} className="flex-container">
 						{row.map((cell, index) => {
@@ -79,24 +79,24 @@ class App extends Component {
 			edgeMap[i] = [];
 		}
 
-		var rows = squares.rows;
+		var matrix = squares.matrix;
 		var row, cell, bottom, right;
-		for (i = 0; i < rows.length - 1; i++) {
-			row = rows[i];
+		for (i = 0; i < matrix.length - 1; i++) {
+			row = matrix[i];
 			for (j = 0 ; j < row.length - 1; j++) {
-				cell = rows[i][j];
+				cell = matrix[i][j];
 
 				if (cell.region === undefined) {
 					continue;
 				}
 
-				bottom = rows[i + 1][j];
+				bottom = matrix[i + 1][j];
 				if (bottom.region !== undefined && cell.region !== bottom.region) {
 					edgeMap[cell.region][bottom.region] = true;
 					edgeMap[bottom.region][cell.region] = true;
 				}
 
-				right = rows[i][j + 1];
+				right = matrix[i][j + 1];
 				if (right.region !== undefined && cell.region !== right.region) {
 					edgeMap[cell.region][right.region] = true;
 					edgeMap[right.region][cell.region] = true;
@@ -143,9 +143,9 @@ class App extends Component {
 		return colors;
 	}
 
-	isOutOfBounds(rows, x, y) {
-		return (x < 0 || x >= rows[0].length ||
-						y < 0 || y >= rows.length);
+	isOutOfBounds(matrix, x, y) {
+		return (x < 0 || x >= matrix[0].length ||
+						y < 0 || y >= matrix.length);
 	}
 
 	updateCenter(area) {
@@ -191,7 +191,7 @@ class App extends Component {
 		return closest;
 	}
 
-	canSteal(rows, area, cand) {
+	canSteal(matrix, area, cand) {
 		var coeffs = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 		var coeff;
 		var i, x, y;
@@ -227,10 +227,10 @@ class App extends Component {
 				y = cell.coord[0] + coeff[0];
 				x = cell.coord[1] + coeff[1];
 
-				if (this.isOutOfBounds(rows, x, y))
+				if (this.isOutOfBounds(matrix, x, y))
 					continue;
 
-				newCell = rows[y][x];
+				newCell = matrix[y][x];
 
 				if (map[cellToString(newCell)])
 					continue;
@@ -246,7 +246,7 @@ class App extends Component {
 		return (area.cells.length - 1 === count);
 	}
 
-	getCandidates(rows, area, areas) {
+	getCandidates(matrix, area, areas) {
 		var coeffs = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 		var i, j, x, y;
 		var cell, coeff, cand;
@@ -260,10 +260,10 @@ class App extends Component {
 				y = cell.coord[0] + coeff[0];
 				x = cell.coord[1] + coeff[1];
 
-				if (this.isOutOfBounds(rows, x, y))
+				if (this.isOutOfBounds(matrix, x, y))
 					continue;
 
-				cand = rows[y][x];
+				cand = matrix[y][x];
 
 				if (cand.region === area.index)
 					continue;
@@ -273,7 +273,7 @@ class App extends Component {
 					continue;
 				}
 
-				if (!this.canSteal(rows, areas[cand.region], cand))
+				if (!this.canSteal(matrix, areas[cand.region], cand))
 					continue;
 					
 				candidates.push(cand);
@@ -284,7 +284,7 @@ class App extends Component {
 	}
 
 	expand(squares) {
-		var rows = squares.rows;
+		var matrix = squares.matrix;
 		var i;
 	 	var center;
 		var areas = [];
@@ -316,7 +316,7 @@ class App extends Component {
 
 			this.updateCenter(area);
 
-			candidates = this.getCandidates(rows, area, areas);
+			candidates = this.getCandidates(matrix, area, areas);
 			candidateIndex = random(candidates.length);
 			cell = candidates[candidateIndex];
 
@@ -359,7 +359,7 @@ class App extends Component {
 			x = Math.round(area.avg.coord[1] - points[i].name.length / 2 + 0.5);
 
 			for (j = 0; j < points[i].name.length; j++) {
-				cell = rows[y][x + j];
+				cell = matrix[y][x + j];
 				cell.initial = points[i].name.charAt(j);
 			}
 		}
@@ -395,16 +395,16 @@ class App extends Component {
 		var y0 = y.avg - axis;
 
 		var j, k;
-		var rows = [];
+		var matrix = [];
 		var row, square;
 		var cellLength = (2 * axis) / squareCount;
 		var centers = [];
 		var rowIndex;
 		for (i = 0;	i < squareCount; i++) {
 			rowIndex = squareCount - i - 1;
-			rows[rowIndex] = row = [];
+			matrix[rowIndex] = row = [];
 			for (j = 0; j < squareCount; j++) {
-				row[j] = square = {coord: [rowIndex, j]};
+				row[j] = square = {coord: [rowIndex, j], neighbors: []};
 				square.x0 = x0 + cellLength * j;
 				square.x1 = x0 + cellLength * (j + 1);
 				square.y0 = y0 + cellLength * i;
@@ -420,13 +420,64 @@ class App extends Component {
 						square.point = point;
 						square.point.region = square.region = k;
 						centers[k] = square;
-						break;
 					}
 				}
 			}
 		}
 
-		return {rows: rows, centers: centers};
+		// top
+		for (i = 1; i < squareCount; i++) {
+			for (j = 0; j < squareCount; j++) {
+				matrix[i][j].neighbors.push(matrix[i - 1][j]);
+			}
+		}
+
+		// right
+		for (i = 0; i < squareCount; i++) {
+			for (j = 0; j < squareCount - 1; j++) {
+				matrix[i][j].neighbors.push(matrix[i][j + 1]);
+			}
+		}
+
+		// down
+		for (i = 0; i < squareCount - 1; i++) {
+			for (j = 0; j < squareCount; j++) {
+				matrix[i][j].neighbors.push(matrix[i + 1][j]);
+			}
+		}
+
+		// left
+		for (i = 0; i < squareCount; i++) {
+			for (j = 1; j < squareCount; j++) {
+				matrix[i][j].neighbors.push(matrix[i][j - 1]);
+			}
+		}
+		
+		var seed = 1;
+		var random = function(number) {
+			var x = Math.sin(seed++) * 10000;
+			return Math.floor((x - Math.floor(x)) * number);
+		}
+
+		var center;
+		var candidates, candidateIndex, candidate;
+		for (i = 0; i < points.length; i++) {
+			center = centers[i]; 
+			if (center.region !== i) {
+				candidates = [];
+				for (j = 0; j < center.neighbors.length; j++) {
+					if (center.neighbors[j].region === undefined) {
+						candidates.push(center.neighbors[j]);
+					}
+				}
+				candidateIndex = random(candidates.length);
+				candidate = candidates[candidateIndex];
+				candidate.region = i;
+				centers[i] = candidate;
+			}
+		}
+
+		return {matrix: matrix, centers: centers};
 	}
 }
 
