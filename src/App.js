@@ -289,7 +289,7 @@ class App extends Component {
 
 	expand(squares, stepLimit) {
 		var matrix = squares.matrix;
-		var i;
+		var i, j;
 	 	var center;
 		var areas = [];
 		var remainingAreas = [];
@@ -364,7 +364,7 @@ class App extends Component {
 			count++;
 		}
 
-		var j, x, y;
+		var x, y;
 		for (i = 0; i < points.length; i++) {
 			area = areas[i];
 			points[i].remain = areas.pop;
