@@ -10,7 +10,7 @@ class App extends Component {
 	
 		var squareCount = this.getSquareCount();
 		var squares = this.getSquares(squareCount);
-		var step = this.expand(squares);
+		var step = this.expand(squares, 100000);
 		var colors = this.color(squares);
 
 		this.state = {squareCount: squareCount, matrix: squares.matrix, colors: colors, step: step};
@@ -171,6 +171,10 @@ class App extends Component {
 		var i, cell, dist;
 		var closest = [];
 
+		if (cells.length === 0) {
+			return [];
+		}
+
 		minDist = this.getDist(cells[0], area.avg);
 		for (i = 0; i < cells.length; i++) {
 			dist = this.getDist(cells[i], area.avg);
@@ -283,7 +287,7 @@ class App extends Component {
 		return this.getClosestCells(area, candidates);
 	}
 
-	expand(squares) {
+	expand(squares, stepLimit) {
 		var matrix = squares.matrix;
 		var i;
 	 	var center;
@@ -308,15 +312,32 @@ class App extends Component {
 
 		var areaIndex, area, cell
 		var candidateIndex, candidates, steal, stolenArea;
-		var stepLimit = 10000;
 		var count = 0;
 		while (count < stepLimit) {
+			remainingAreas = [];
+
+			for (i = 0; i < points.length; i++) {
+				area = areas[i];
+				for (j = 0; j < area.pop; j++) {
+					remainingAreas.push(area);
+				}
+			}
+
+			if (remainingAreas.length === 0) {
+				break;
+			}
+
 			areaIndex = random(remainingAreas.length);
 			area = remainingAreas[areaIndex];
 
 			this.updateCenter(area);
 
 			candidates = this.getCandidates(matrix, area, areas);
+
+			if (candidates.length === 0) {
+				continue;
+			}
+
 			candidateIndex = random(candidates.length);
 			cell = candidates[candidateIndex];
 
@@ -338,13 +359,6 @@ class App extends Component {
 				steal.region = area.index;
 				area.cells.push(steal);
 				area.pop--;
-			}
-			
-			if (area.pop === 0) {
-				remainingAreas.splice(areaIndex, 1);
-				if (remainingAreas.length === 0) {
-					break;
-				}
 			}
 
 			count++;
@@ -461,19 +475,48 @@ class App extends Component {
 
 		var center;
 		var candidates, candidateIndex, candidate;
+		var neighbors, found;
 		for (i = 0; i < points.length; i++) {
 			center = centers[i]; 
 			if (center.region !== i) {
-				candidates = [];
-				for (j = 0; j < center.neighbors.length; j++) {
-					if (center.neighbors[j].region === undefined) {
-						candidates.push(center.neighbors[j]);
+				neighbors = [{state: 0, cell: center}];
+				while (true) {
+					candidates = [];
+					for (j = 0; j < neighbors.length; j++) {
+						if (neighbors[j].state === 1)
+							continue;
+
+						center = neighbors[j].cell;
+						for (j = 0; j < center.neighbors.length; j++) {
+							if (center.neighbors[j].region === undefined) {
+								candidates.push(center.neighbors[j]);
+							}
+
+							found = false;
+							for (k = 0; k < neighbors.length; k++) {
+								if (neighbors[k].cell.coord[0] === center.neighbors[j].coord[0] &&
+										neighbors[k].cell.coord[1] === center.neighbors[j].coord[1]) {
+									found = true;
+									break;
+								}
+							}
+
+							if (!found) {
+								neighbors.push({state: 0, cell: center.neighbors[j]});
+							}
+						}
+
+						neighbors[j].state = 1;
+					}
+
+					if (candidates.length > 0) {
+						candidateIndex = random(candidates.length);
+						candidate = candidates[candidateIndex];
+						candidate.region = i;
+						centers[i] = candidate;
+						break;
 					}
 				}
-				candidateIndex = random(candidates.length);
-				candidate = candidates[candidateIndex];
-				candidate.region = i;
-				centers[i] = candidate;
 			}
 		}
 
